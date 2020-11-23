@@ -1,5 +1,4 @@
 'use strict';
-
 class Entity extends Phaser.Sprite {
   constructor(game, x, y, grid, index = 0) {
     super(game, x, y, 'sprites', index);
@@ -10,6 +9,7 @@ class Entity extends Phaser.Sprite {
     if (this.gridPos) {
       this.grid.screenToGrid(this.x, this.y, this.gridPos);
     }
+   
   }
 
   destroy() {
@@ -19,6 +19,10 @@ class Entity extends Phaser.Sprite {
 
   kill() {
     super.kill();
+      var element = document.querySelector("#over");
+      var element1 = document.querySelector("#screen");
+      element.style.display = "block";
+      element1.style.display = "none";
   }
 }
 
@@ -30,7 +34,7 @@ class Wall extends Entity {
     this.slack = 0.5;
     this.body.setSize(32 - this.slack, 32 - this.slack, this.slack * 0.5, this.slack * 0.5)
   }
-  
+
   kill() {
     // cannot be killed
   }
@@ -41,53 +45,53 @@ class Bricks extends Wall {
     super(game, x, y, grid);
     this.frame = 1;
   }
-  
+
   kill() {
     const pickupChance = this.game.rnd.frac();
-    const tween = this.game.add.tween(this).to({alpha: 0}, 300, Phaser.Easing.Linear.None, true);
-    
+    const tween = this.game.add.tween(this).to({ alpha: 0 }, 300, Phaser.Easing.Linear.None, true);
+
     tween.onComplete.add(() => {
       this.destroy();
     }, this);
-    
+
     // 1/4 chance of dropping a power-up feels about right to me...
     if (pickupChance < 0.25) {
       this.dropPickup();
     }
   }
-  
+
   dropPickup() {
     const place = this.gridPos.clone();
     const screenPos = this.grid.gridToScreen(place.x, place.y);
-    
+
     const pickupClasses = [PickupBomb, PickupFire];
     const pickupClass = this.game.rnd.pick(pickupClasses);
-    
+
     const pickup = new (pickupClass)(this.game, screenPos.x, screenPos.y, this.grid);
-    
+
     this.parent.add(pickup);
   }
 }
 
 class Player extends Entity {
   constructor(game, x, y, grid) {
-    super(game, x, y, grid, 6);
+    super(game, x, y, grid, 1);
 
     this.controls = this.game.input.keyboard.createCursorKeys();
-    this.speed = 96;
+    this.speed = 150;
 
     this.totalBombs = 1;
     this.currentBombs = 0;
-    this.bombSize = 3;
+    this.bombSize = 2;
 
     this.body.setCircle(16);
     this.body.drag.set(768);
 
     this.lastGridPos = this.gridPos.clone();
-    
-    this.blastThrough = true;
-  }
 
+    //this.blastThrough = true;
+
+  }
   update() {
     super.update();
     if (!this.alive) {
@@ -133,7 +137,7 @@ class Player extends Entity {
     return false;
   }
 
-  dropBomb() {    
+  dropBomb() {
     const place = this.gridPos.clone();
     const screenPos = this.grid.gridToScreen(place.x, place.y);
     if (this.currentBombs < this.totalBombs && this.canPlaceBomb(place)) {
@@ -141,12 +145,32 @@ class Player extends Entity {
       this.parent.add(bomb);
     }
   }
-  
+
   checkGrid() {
     const item = this.grid.getAt(this.gridPos.x, this.gridPos.y, this);
     if (item && item instanceof Pickup) {
       item.collect(this);
     }
+  }
+}
+
+class Bot extends Entity {
+  constructor(game, x, y, grid) {
+    super(game, x, y, grid, 5);
+
+    //this.speed = 96;
+
+    this.body.setCircle(16);
+    this.body.drag.set(0);
+    this.lastGridPos = this.gridPos.clone();
+  }
+
+  update() {
+    //super.update();
+    super.update();
+  }
+  kill() {
+    this.destroy();
   }
 }
 
@@ -159,8 +183,8 @@ class Pickup extends Entity {
     this.body.enable = false;
     this.body.moves = false;
   }
-  
-  collect(player) {
+
+  collect() {
     this.destroy();
   }
 }
@@ -169,7 +193,7 @@ class PickupBomb extends Pickup {
   constructor(game, x, y, grid) {
     super(game, x, y, grid, 8);
   }
-  
+
   collect(player) {
     super.collect(player);
     player.totalBombs += 1;
@@ -180,7 +204,7 @@ class PickupFire extends Pickup {
   constructor(game, x, y, grid) {
     super(game, x, y, grid, 9);
   }
-  
+
   collect(player) {
     super.collect(player);
     player.bombSize += 1;
@@ -199,15 +223,15 @@ class Bomb extends Entity {
     if (this.owner) {
       this.owner.currentBombs += 1;
     }
-    
+
     this.size = this.owner.bombSize || 3;
 
     this.duration = Phaser.Timer.SECOND * 3;
     this.explodeTimer = this.game.time.events.add(this.duration, this.explode, this);
 
-    const tween1 = this.game.add.tween(this.scale).to({x: 1.1, y: 0.9}, this.duration / 9, Phaser.Easing.Circular.InOut, true, 0, -1);
+    const tween1 = this.game.add.tween(this.scale).to({ x: 1.1, y: 0.9 }, this.duration / 9, Phaser.Easing.Circular.InOut, true, 0, -1);
     tween1.yoyo(true, 0);
-    const tween2 = this.game.add.tween(this.anchor).to({y: 0.45}, this.duration / 9, Phaser.Easing.Circular.InOut, true, 0, -1);
+    const tween2 = this.game.add.tween(this.anchor).to({ y: 0.45 }, this.duration / 9, Phaser.Easing.Circular.InOut, true, 0, -1);
     tween2.yoyo(true, 0);
   }
 
@@ -235,7 +259,7 @@ class Explosion extends Entity {
     this.owner = owner;
     this.body.immovable = true;
     this.body.moves = false;
-    
+
     this.game.camera.shake(0.0075, 500);
 
     this.duration = Phaser.Timer.SECOND * .5;
@@ -375,12 +399,12 @@ class Explosion extends Entity {
     for (let i = 0; i < this.blast.length; i++) {
       this.blast[i].destroy();
     }
-    const tween = this.game.add.tween(this).to({alpha: 0}, 300, Phaser.Easing.Linear.None, true);
+    const tween = this.game.add.tween(this).to({ alpha: 0 }, 300, Phaser.Easing.Linear.None, true);
     tween.onComplete.add(() => {
       super.destroy();
     }, this);
   }
-  
+
   kill() {
     // cannot be killed
   }
@@ -393,17 +417,17 @@ class Blast extends Entity {
     this.body.immovable = true;
     this.slack = 18;
     this.body.setSize(32 - this.slack, 32 - this.slack, this.slack * 0.5, this.slack * 0.5)
-    
+
     this.blastThrough = true;
   }
-  
+
   kill() {
     // cannot be killed
   }
-  
+
   destroy() {
     this.body.enable = false;
-    const tween = this.game.add.tween(this).to({alpha: 0}, 300, Phaser.Easing.Linear.None, true);
+    const tween = this.game.add.tween(this).to({ alpha: 0 }, 300, Phaser.Easing.Linear.None, true);
     tween.onComplete.add(() => {
       super.destroy();
     }, this);
@@ -464,100 +488,116 @@ class Grid {
 class Level extends Phaser.State {
   preload() {
     this.stage.disableVisibilityChange = true;
-    this.game.load.spritesheet('sprites', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACABAMAAAAxEHz4AAAAElBMVEUAAAD///+2trZLS0va2toAAAAGLkTLAAAAAXRSTlMAQObYZgAABB5JREFUaN6Ml2GO3CAMhRE5QZIewDy2/5Nwgq72BJV6/6vU2J4ExmzL+5HB0vD02TF4Jnytnb4iOlH4n371Bj+gylBdYajGen3Tm0EOoqWUgz9i1FAwXwYbmt3pHBIUUQNAQKSXwfYYpDQkKKawGgFE0wRLMZ0GEKnWgGi2BqUgmwFpBURjgzOXTlcFuNZNgv1QAlKLMUGLrwSlpJdBeTIAxTHBm8ElAGqQsr5LqGiSYGGANddsEsQAqAQbP6cILAMzKNUg8naG2jBFIAZZDKAGvD+l+s049xZkowhZCRDXqg1TfcAl2Bq/gwkYQb5JNDBwndgblGpASEoQ5wiu3BMEmAGBpghYPQFgNQBNEbA6AkgKWoSpt9Aq22u0FDDRB94g3EUETXViq10PoxnQ3FnoS/AUMSHOEHQG6dBOvFOYIQgNwB6aIiYEmruReoAAMwATuEt1eCu3AHqcN0vBX+vjW7kB0LMEM8AUgSFcqQTV3Ylx0EjfTKbrunJ55uJmNZDhunf6kXu1s1EV71aWPvDj/ep0BCewgxFEtUS0nOBir683yYb2cPh4bPDRGMQ7JwQXi4roGBG43o59LFpW0T4i6E8XR0RtrA7nqjrGBOGFTNUAhKcG7GUAhjAmIDtdmgKAO2Y3AzCEf74FENASyEoNiuhUA08QsD1FA+uOtdfOHT9/4w/yNwT96YLIYtY3Bp+NAQmyMgemSUga82Jk0Ks/XUQhJawqXUwQoBuW65smCKjJ2RnMEER2uFMYGqwFrHx+T2Ap0IBAO1HaQDrxk1UJPlhm0M97b+BbuZrU3dWkpvA0ztignLYu4xT6ee8Nyl4MoOyHa2U3753Bwhurg3zsjsDN+5RW2KiRRWB+ZqjaeXm8E7h5j9rJllLitRicoqIGvdy8R5XFVUog8gT+TjQDjdVgOfcXQVmLq4Gb90TNjcQBt8GxlMpQSii+ld28fwief1aL/OVBHl3rbt5HBnpivdjl5zY/juAJ3LyniCaOCgBkeQwI3Lx3cWfgCfy87+MJgn7eu3iCoJv3LrbZeshjXIPu6LzHE1pLo5Xjv+3VwW3DMAyFYWQDPxodgOQE5hulyP6rtFVkR1YPFhPkpv8sfCZsg7o3DQg3Wttyu7NtuQaiA75ZilFgtVP6xb/cK7GNAmQLhIQ5E0A5bKZyTEBIYgJnKaROEAwqbBxgPA4/34G6Qn0c2FCWpj0nUECGJ2AA5amsgLoAEB8GFHICgorfRgGnwk+ACXJA/Yw7EKEFkFEghLV4AHwXMOQAsgMEojDAXwdcZNM8EPt/gBXYkAe2AyiNAnYA3gFMArG+CNgxwBmQJBCyA5EFvAAaHbBmVloEm52oBfA3lirQLZTsWjdAOAbcrLtYeGr5JFCDNeHfZXvV1fU+m81ms9lslu4HtQ9fHtWYNW8AAAAASUVORK5CYII=', 32, 32);
+    this.game.load.spritesheet('sprites', 'sprites/image.png', 32, 32);
+    this.game.load.image('wall', 'sprites/wall.png', 32, 32);
+    this.game.load.image('grass', 'sprites/grass.png', 32, 32);
+    this.game.load.image('balloom', 'sprites/balloom.png', 32, 32);
+    
   }
 
   create() {
     this.game.renderer.renderSession.roundPixels = true;
     this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
-    this.game.input.keyboard.addKeyCapture([ Phaser.Keyboard.UP, Phaser.Keyboard.DOWN, Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.SPACEBAR ]);
+    this.game.input.keyboard.addKeyCapture([Phaser.Keyboard.UP, Phaser.Keyboard.DOWN,
+    Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.SPACEBAR]);
 
-    this.grid = new Grid(18, 14);
+    this.grid = new Grid(31, 13);
 
     this.background = this.game.add.group();
     this.items = this.game.add.physicsGroup();
     this.items.x = this.background.x = 16;
     this.items.y = this.background.y = 16;
 
-    for (let x = 0; x <= this.grid.width; x++) {
-      for (let y = 0; y <= this.grid.height; y ++) {
-        if (x === 0 || y === 0 || x === this.grid.width || y === this.grid.height) {
+    var gameMap = [
+      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+      1,0,0,0,0,0,0,2,2,0,2,0,0,1,0,2,0,2,0,2,0,0,2,0,2,0,2,0,0,0,1,
+      1,0,1,0,1,0,1,2,1,0,1,0,1,2,1,2,1,0,1,0,1,0,1,2,1,2,1,2,1,0,1,
+      1,0,0,3,2,0,0,0,0,0,2,2,2,0,0,2,0,0,1,0,0,0,2,0,2,0,2,0,2,0,1,
+      1,0,1,0,1,0,1,0,1,0,1,2,1,0,2,0,1,2,1,2,1,0,1,0,1,0,1,0,1,2,1,
+      1,7,0,0,0,0,0,0,0,0,0,3,0,2,2,0,0,2,0,0,2,0,0,0,1,0,0,0,0,0,1,
+      1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,2,1,0,1,2,1,0,1,0,1,0,1,
+      1,2,0,0,2,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,1,
+      1,0,1,0,1,0,1,0,1,2,1,0,1,0,1,0,1,2,1,2,1,0,1,0,1,0,1,0,1,0,1,
+      1,2,0,0,0,0,2,2,0,0,2,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,1,
+      1,0,1,2,1,0,1,0,1,0,1,0,1,0,1,0,1,2,1,0,1,0,1,0,1,0,1,0,1,0,1,
+      1,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,1,
+      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+      ];
+    var mapW = 31, mapH = 13;
+
+    for(let y = 0; y < mapH; ++y) {
+		  for(var x = 0; x < mapW; ++x) {
+        if(gameMap[((y*mapW)+x)]==1) {
           const wall = new Wall(this.game, x * this.grid.size, y * this.grid.size, this.grid);
           this.items.add(wall);
         }
-        else if ((x > 0 && x < this.grid.width && !(x%2)) && (y > 0 && y < this.grid.height && !(y%2))) {
-          const wall = new Wall(this.game, x * this.grid.size, y * this.grid.size, this.grid);
-          this.items.add(wall);
-        }
-        else {
-          this.background.create((x * this.grid.size), (y * this.grid.size), 'sprites', 7).anchor.set(.5);
-          if (x > 1 && x < this.grid.width - 1 && y > 1 && y < this.grid.height - 1 && Math.random() > 0.25) {
-            const bricks = new Bricks(this.game, x * this.grid.size, y * this.grid.size, this.grid);
-            this.items.add(bricks);
-          }
-        }
-      }
-    }
-    
-    for (let x = 3; x < this.grid.width - 3; x++) {
-        if (Math.random() > 0.15) {
-          const bricks = new Bricks(this.game, x * this.grid.size, this.grid.size, this.grid);
+        if(gameMap[((y*mapW)+x)]==2) {
+          const bricks = new Bricks(this.game, x * this.grid.size, y * this.grid.size, this.grid);
           this.items.add(bricks);
         }
-        if (Math.random() > 0.15) {
-          const bricks = new Bricks(this.game, x * this.grid.size, (this.grid.height - 1) * this.grid.size, this.grid);
-          this.items.add(bricks);
+			  if(gameMap[((y*mapW)+x)]!=1){
+          this.background.create((x * this.grid.size), (y * this.grid.size), 'grass').anchor.set(0.5);
         }
-    }
-    for (let y = 3; y < this.grid.height - 3; y++) {
-        if (Math.random() > 0.15) {
-          const bricks = new Bricks(this.game, this.grid.size, y * this.grid.size, this.grid);
-          this.items.add(bricks);
-        }
-
-        if (Math.random() > 0.15) {
-          const bricks = new Bricks(this.game, (this.grid.width - 1) * this.grid.size, y * this.grid.size, this.grid);
-          this.items.add(bricks);
-        }
-    }
-
+	  	}
+	  }
+ 
     this.player = new Player(this.game, this.grid.size, this.grid.size, this.grid);
     this.items.add(this.player);
-  };
+    //Vẽ bot
 
+    this.bot = new Bot(this.game, this.grid.size, 5 * this.grid.size, this.grid);
+    this.items.add(this.bot);
+
+  };
+  update() {
+    this.game.physics.arcade.collide(this.bot, this.items, (a, b) => {
+      if (a instanceof Bot && (b instanceof Blast || b instanceof Explosion)) {
+        a.kill();
+      }
+    });
+  };
   update() {
     this.game.physics.arcade.collide(this.player, this.items, (a, b) => {
       if (a instanceof Player && (b instanceof Blast || b instanceof Explosion)) {
         a.kill();
       }
     });
-  };
+    this.game.physics.arcade.collide(this.player, this.bot, ()=>{
+      this.player.kill();
+      // var element = document.querySelector("#over");
+      // var element1 = document.querySelector("#screen");
+      // element.style.display = "block";
+      // element1.style.display = "none";
 
-  render() {
-    /*
-    this.game.debug.start();
-    this.items.forEach((i) => {
-      if (i.alive) {
-        this.game.debug.context.fillStyle = 'rgba(255, 0, 0, 0.4)';
-        const gridPos = this.grid.gridToScreen(i.gridPos.x, i.gridPos.y);
-        this.game.debug.context.fillRect(gridPos.x, gridPos.y, this.grid.size, this.grid.size);
-      }
     });
-    this.game.debug.stop();
+    
 
-    this.items.forEach((i) => {
-      if (i.alive) {
-        this.game.debug.body(i);
-      }
-    })
-    */
   };
+
+  // render() {
+
+  //   this.game.debug.start();
+  //   this.items.forEach((i) => {
+  //     if (i.alive) {
+  //       this.game.debug.context.fillStyle = 'rgba(255, 0, 0, 0.4)';
+  //       const gridPos = this.grid.gridToScreen(i.gridPos.x, i.gridPos.y);
+  //       this.game.debug.context.fillRect(gridPos.x, gridPos.y, this.grid.size, this.grid.size);
+  //     }
+  //   });
+  //   this.game.debug.stop();
+  //   this.items.forEach((i) => {
+  //     if (i.alive) {
+  //       this.game.debug.body(i);
+  //     }
+  //   })
+
+  // };
 };
 
 class Game extends Phaser.Game {
   constructor() {
-    super(608, 480, Phaser.AUTO, 'screen', null);
+    super(992, 416, Phaser.AUTO, 'screen', null);
     this.state.add('Level', Level, false);
     this.state.start('Level');
   };
