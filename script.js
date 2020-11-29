@@ -75,7 +75,7 @@ class Bricks extends Wall {
 
 class Player extends Entity {
   constructor(game, x, y, grid) {
-    super(game, x, y, grid, 1);
+    super(game, x, y, grid, 3);
 
     this.controls = this.game.input.keyboard.createCursorKeys();
     this.speed = 150;
@@ -155,18 +155,36 @@ class Player extends Entity {
 }
 
 class Bot extends Entity {
-  constructor(game, x, y, grid) {
-    super(game, x, y, grid, 5);
+
+  constructor(game, x, y, grid,position, properties) {
+    super(game, x, y, grid, 2);
 
     //this.speed = 96;
 
     this.body.setCircle(16);
     this.body.drag.set(0);
     this.lastGridPos = this.gridPos.clone();
+
+    this.anchor.setTo(.5);
+    
+    this.walking_speed = +properties.walking_speed;
+    this.walking_distance = +properties.walking_distance;
+    this.direction = +properties.direction;
+    this.axis = properties.axis;
+    
+    this.previous_position = (this.axis === "x") ? this.x : this.y; 
+    this.stopped_frames = [0, 0, 0, 0, 0];
+    
+    this.game_state.game.physics.arcade.enable(this);
+    if (this.axis === "x") {
+        this.body.velocity.x = this.direction * this.walking_speed;
+    } 
+    else {
+        this.body.velocity.y = this.direction * this.walking_speed;
+    }
   }
 
   update() {
-    //super.update();
     super.update();
   }
   kill() {
@@ -548,6 +566,9 @@ class Level extends Phaser.State {
 
     this.bot = new Bot(this.game, this.grid.size, 5 * this.grid.size, this.grid);
     this.items.add(this.bot);
+    this.bot = new Bot(this.game, 5*this.grid.size, 5 * this.grid.size, this.grid);
+    this.items.add(this.bot);
+    
 
   };
   update() {
